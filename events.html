@@ -1,0 +1,734 @@
+<title>DEF CON 34 — Party &amp; Event Tracker</title>
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  :root {
+    --bg: #eef0f2;
+    --surface: #ffffff;
+    --surface-2: #e2e6ea;
+    --border: #c9cfd6;
+    --border-strong: #a9b0ba;
+    --text: #1a1d24;
+    --muted: #565e6b;
+    --accent: #a8660a;
+    --accent-strong: #7d4c07;
+    --accent-contrast: #fff8ee;
+
+    --tag-party: #c22a63;
+    --tag-meetup: #0c8f83;
+    --tag-community: #5f45c9;
+    --tag-contest: #1a5fc9;
+    --tag-outdoor: #22794a;
+
+    --focus: #1a5fc9;
+    --shadow: 0 1px 2px rgba(20, 22, 30, 0.06), 0 8px 20px -12px rgba(20, 22, 30, 0.18);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12141c;
+      --surface: #1a1d27;
+      --surface-2: #232733;
+      --border: #333a49;
+      --border-strong: #48505f;
+      --text: #edeff2;
+      --muted: #9aa1b0;
+      --accent: #ffb238;
+      --accent-strong: #ffcb73;
+      --accent-contrast: #241804;
+
+      --tag-party: #ff7bab;
+      --tag-meetup: #3fd6c6;
+      --tag-community: #ab9dff;
+      --tag-contest: #74acff;
+      --tag-outdoor: #7fdb9d;
+
+      --focus: #74acff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #12141c;
+    --surface: #1a1d27;
+    --surface-2: #232733;
+    --border: #333a49;
+    --border-strong: #48505f;
+    --text: #edeff2;
+    --muted: #9aa1b0;
+    --accent: #ffb238;
+    --accent-strong: #ffcb73;
+    --accent-contrast: #241804;
+
+    --tag-party: #ff7bab;
+    --tag-meetup: #3fd6c6;
+    --tag-community: #ab9dff;
+    --tag-contest: #74acff;
+    --tag-outdoor: #7fdb9d;
+
+    --focus: #74acff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  body {
+    font-family: ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
+  a { color: var(--accent-strong); }
+  a:focus-visible, button:focus-visible, .pill:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .eyebrow .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+    flex: none;
+  }
+
+  h1 {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-weight: 700;
+    font-size: clamp(24px, 4.5vw, 34px);
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+
+  header.top p {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--muted);
+    font-size: 14.5px;
+  }
+
+  /* ---------- Filter bar ---------- */
+  .filters {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    padding: 14px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 22px;
+  }
+
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .filter-row + .filter-row { margin-top: 10px; }
+
+  .filter-label {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    width: 64px;
+    flex: none;
+  }
+
+  .pill {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.03em;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .pill:hover { border-color: var(--accent); }
+
+  .pill[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: 600;
+  }
+
+  .pill .today-flag {
+    font-size: 9px;
+    background: var(--accent-contrast);
+    color: var(--accent-strong);
+    border-radius: 2px;
+    padding: 1px 4px;
+    letter-spacing: 0.06em;
+  }
+  .pill[aria-pressed="true"] .today-flag {
+    background: var(--accent-contrast);
+    color: var(--accent-strong);
+  }
+
+  .type-pill[data-type="Party"][aria-pressed="true"] { background: var(--tag-party); border-color: var(--tag-party); color: #1a0b12; }
+  .type-pill[data-type="Meetup"][aria-pressed="true"] { background: var(--tag-meetup); border-color: var(--tag-meetup); color: #08201d; }
+  .type-pill[data-type="Community"][aria-pressed="true"] { background: var(--tag-community); border-color: var(--tag-community); color: #120a2e; }
+  .type-pill[data-type="Contest & Games"][aria-pressed="true"] { background: var(--tag-contest); border-color: var(--tag-contest); color: #071a33; }
+  .type-pill[data-type="Outdoor & Wellness"][aria-pressed="true"] { background: var(--tag-outdoor); border-color: var(--tag-outdoor); color: #061f10; }
+
+  .filter-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  .filter-meta button {
+    background: none;
+    border: none;
+    color: var(--accent-strong);
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ---------- Day groups ---------- */
+  .day-group { margin-bottom: 30px; }
+
+  .day-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border-strong);
+  }
+
+  .day-heading h2 {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 15px;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .day-heading .date {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
+  .day-heading .count {
+    margin-left: auto;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  /* ---------- Event card (ticket stub) ---------- */
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card {
+    display: grid;
+    grid-template-columns: 96px 1px 1fr;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .card:hover { border-color: var(--border-strong); }
+
+  .stub {
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    background: var(--surface-2);
+  }
+
+  .stub .days-badge {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--accent-strong);
+  }
+
+  .stub .time {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+  }
+
+  .perforation {
+    background: repeating-linear-gradient(to bottom, var(--border-strong) 0 6px, transparent 6px 12px);
+    width: 1px;
+  }
+
+  .content {
+    padding: 13px 16px;
+    min-width: 0;
+  }
+
+  .content .name {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 14.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 7px;
+  }
+
+  .chip {
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
+  .chip.type-party { color: var(--tag-party); }
+  .chip.type-meetup { color: var(--tag-meetup); }
+  .chip.type-community { color: var(--tag-community); }
+  .chip.type-contest { color: var(--tag-contest); }
+  .chip.type-outdoor { color: var(--tag-outdoor); }
+
+  .chip.rsvp {
+    color: var(--muted);
+    border-color: var(--border-strong);
+  }
+
+  .location {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0 0 7px;
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+
+  .location .mark {
+    color: var(--accent-strong);
+    font-size: 11px;
+  }
+
+  .desc {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--text);
+    max-width: 60ch;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  footer a { color: var(--muted); text-decoration-color: var(--border-strong); }
+
+  @media (max-width: 480px) {
+    .card { grid-template-columns: 78px 1px 1fr; }
+    .stub { padding: 12px 8px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow"><span class="dot"></span>DEF CON 34 · AUG 5–9, 2026 · LAS VEGAS CONVENTION CENTER</div>
+    <h1>Party &amp; Event Tracker</h1>
+    <p>An unofficial, filterable guide to DEF CON 34's parties, meetups, and community gatherings — official con events plus the vendor and community-run side of hacker summer camp. Filter by day and by vibe to find what's worth your night.</p>
+  </header>
+
+  <div class="filters">
+    <div class="filter-row" id="day-row">
+      <span class="filter-label">Day</span>
+    </div>
+    <div class="filter-row" id="type-row">
+      <span class="filter-label">Vibe</span>
+    </div>
+    <div class="filter-meta">
+      <span id="result-count"></span>
+      <button type="button" id="reset-btn">Reset filters</button>
+    </div>
+  </div>
+
+  <main id="results"></main>
+
+  <footer>
+    Compiled from DEF CON's official Parties/Meetups/Events listing and the independent conferenceparties.com Hacker Summer Camp tracker, as published in early August 2026. Off-site and vendor-hosted parties can change on short notice or require day-of RSVP — confirm time-sensitive details (especially "Venue TBA" entries) before heading out. Recurring events (runs, ham radio sessions, recovery meetings) are grouped under their first day; check each card's day badge for the full run.
+  </footer>
+</div>
+
+<script>
+(function () {
+  var WEEKDAYS = ["Wed", "Thu", "Fri", "Sat", "Sun"];
+  var DAY_DATES = {
+    Wed: "Aug 5",
+    Thu: "Aug 6",
+    Fri: "Aug 7",
+    Sat: "Aug 8",
+    Sun: "Aug 9"
+  };
+  var DAY_FULL = {
+    Wed: "Wednesday",
+    Thu: "Thursday",
+    Fri: "Friday",
+    Sat: "Saturday",
+    Sun: "Sunday"
+  };
+  var DAY_REAL_DATE = {
+    Wed: new Date(2026, 7, 5),
+    Thu: new Date(2026, 7, 6),
+    Fri: new Date(2026, 7, 7),
+    Sat: new Date(2026, 7, 8),
+    Sun: new Date(2026, 7, 9)
+  };
+
+  var TYPES = ["Party", "Meetup", "Community", "Contest & Games", "Outdoor & Wellness"];
+  var TYPE_SLUG = {
+    "Party": "party",
+    "Meetup": "meetup",
+    "Community": "community",
+    "Contest & Games": "contest",
+    "Outdoor & Wellness": "outdoor"
+  };
+
+  var events = [
+    { id: "shoot", name: "The Unofficial DEF CON Shoot", days: ["Wed"], time: "11:00 AM – 5:15 PM", location: "Pro Gun Vegas, Boulder City, NV", type: "Outdoor & Wellness", desc: "Public shooting event before the badge line forms — bring your own iron or try someone else's. All safety gear provided.", rsvp: false },
+    { id: "tx-meetup", name: "DC713 & DC281: Texas Groups Meetup", days: ["Wed"], time: "6:30 – 9:30 PM", location: "Cornish Pasty Co, Las Vegas", type: "Meetup", desc: "“Come for the friends, stay for the pasties” — the 8th annual Lone Star hacker reunion.", rsvp: false },
+
+    { id: "defcon-run", name: "defcon.run", days: ["Thu", "Fri", "Sat", "Sun"], time: "6:00 – 8:00 AM daily", location: "LVCC West Hall, North Entrance", type: "Outdoor & Wellness", desc: "A running/rucking tradition with route options from a 5K up. Sign-ups at defcon.run; exact start time shifts slightly day to day.", rsvp: false },
+    { id: "ham-class", name: "Ham In A Day Class", days: ["Thu"], time: "10:00 AM – 5:00 PM", location: "LVCC L3, W314", type: "Outdoor & Wellness", desc: "Free one-day amateur radio license prep course — arrive knowing nothing, leave ready to test. Lunch provided.", rsvp: false },
+    { id: "fobw", name: "Friends of Bill W", days: ["Thu", "Fri", "Sat", "Sun"], time: "12:00 – 1:00 PM daily (+5–6 PM Thu–Sat)", location: "LVCC L3, W301", type: "Outdoor & Wellness", desc: "Recovery support meetings for attendees, with extra evening sessions Thursday through Saturday.", rsvp: false },
+    { id: "toxic-bbq", name: "Toxic BBQ", days: ["Thu"], time: "3:00 – 9:00 PM", location: "Foxtail Pavilion, Sunset Park", type: "Meetup", desc: "The unofficial con opener: a 50+ sq. ft. community grill session. Donations support the EFF.", rsvp: false },
+    { id: "dcg-social", name: "Operator, Please Hold — DCG Social", days: ["Thu"], time: "6:00 – 8:00 PM", location: "LVCC L2, W238", type: "Meetup", desc: "DEF CON Groups come off the mailing list and into a room — no agenda, just organizers meeting organizers.", rsvp: false },
+    { id: "exploit-story", name: "Exploit Your Own Story", days: ["Thu", "Fri"], time: "6:00 – 8:00 PM", location: "LVCC L3, W302", type: "Community", desc: "A writing and storytelling circle centering women's voices, open to all gender identities.", rsvp: false },
+    { id: "welcome-party", name: "Welcome Party at The Industrial", days: ["Thu"], time: "6:30 – 11:30 PM", location: "The Industrial, Las Vegas", type: "Party", desc: "The official con kickoff party. Off-site — shuttle details posted closer to the date.", rsvp: false },
+    { id: "dc702", name: "DC702 Meetup", days: ["Thu"], time: "7:00 – 10:00 PM", location: "LVCC L3, W327", type: "Meetup", desc: "The home-turf Vegas crew hosts socializing, lockpicking, challenges, music, and surprises.", rsvp: false },
+    { id: "planners", name: "Conference Planners Meetup", days: ["Thu"], time: "9:00 PM – 12:00 AM", location: "LVCC L2, W212", type: "Community", desc: "Informal networking for the people who build events — planners, managers, and technologists compare notes.", rsvp: false },
+
+    { id: "cycleoverride", name: "15th Annual Cycleoverride Bike Ride", days: ["Fri"], time: "6:00 – 11:00 AM", location: "Local bike shop → Red Rocks", type: "Outdoor & Wellness", desc: "A 15-mile downhill ride out to Red Rocks and back. Details at cycleoverride.org.", rsvp: false },
+    { id: "ham-exam", name: "Free Ham Radio License Exams", days: ["Fri", "Sat", "Sun"], time: "Varies — Fri 1–4 PM, Sat 11 AM–5 PM, Sun 11 AM–1 PM", location: "LVCC L3, W314", type: "Outdoor & Wellness", desc: "Sit the real FCC exam on-site. A $35 FCC fee applies if you pass.", rsvp: false },
+    { id: "book-club", name: "Hacker Book Club Discussion", days: ["Fri"], time: "2:00 – 4:00 PM", location: "LVCC L3, W301", type: "Community", desc: "Year-round on Discord, one big in-person meetup — community and continual learning in the same room.", rsvp: false },
+    { id: "queercon", name: "Queercon Mixer", days: ["Fri", "Sat"], time: "4:00 – 6:00 PM", location: "LVCC L3, W325", type: "Community", desc: "The largest social network of LGBTQIA+ and allied hackers. Music, dancing, refreshments.", rsvp: false },
+    { id: "atl-meetup", name: "Atlanta Metro Meetup (DC404/678/770/470)", days: ["Fri"], time: "4:00 – 7:00 PM", location: "LVCC L3, W327", type: "Meetup", desc: "Southeast regional crews — intown, northern burbs, and south siders — unite from a 30+ year legacy.", rsvp: false },
+    { id: "bishopfox", name: "Bishop Fox Community MeetUp", days: ["Fri"], time: "5:00 – 7:00 PM", location: "RedTail, Resorts World", type: "Meetup", desc: "Vendor-hosted happy hour open to the extended community.", rsvp: true },
+    { id: "policy-mixer", name: "Policy Mixer Happy Hour", days: ["Fri"], time: "6:30 – 8:30 PM", location: "LVCC L2, W210–211", type: "Community", desc: "Policy Village's social hour for the wonks in the room.", rsvp: false },
+    { id: "intigriti", name: "Intigriti Hackers Unplugged + SwagFest", days: ["Fri"], time: "6:30 – 9:30 PM", location: "Play Playground, Luxor", type: "Party", desc: "Games, swag, and off-site mingling courtesy of a bug-bounty platform.", rsvp: true },
+    { id: "blanketfort", name: "BlanketFort Con", days: ["Fri"], time: "7:00 PM – 1:00 AM", location: "LVCC L2, W212", type: "Community", desc: "Blanket-fort building, string lights, and kid-friendly chill vibes — the softest corner of the con.", rsvp: false },
+    { id: "lawyers", name: "Lawyers Meet", days: ["Fri"], time: "7:00 – 10:00 PM", location: "LVCC L3, W301", type: "Community", desc: "Social hour for lawyers, judges, and law students, hosted by Jeff McNamara.", rsvp: false },
+    { id: "secv-party", name: "Social Engineering Community Village Party", days: ["Fri"], time: "7:00 – 11:00 PM", location: "LVCC L3, W317–319", type: "Party", desc: "Mingle with the Social Engineering Community crew, competitors, and speakers.", rsvp: false },
+    { id: "kevops-pool", name: "The KEVOPS Sellout Pool Party II", days: ["Fri"], time: "7:00 – 10:00 PM", location: "Sahara Azul Ultra Pool", type: "Party", desc: "Tacos, music, and a pool party sponsored by Zyn.", rsvp: false },
+    { id: "jeopardy", name: "Hacker Jeopardy", days: ["Fri", "Sat"], time: "8:00 – 10:00 PM", location: "LVCC L1, Exhibit Hall West 3", type: "Contest & Games", desc: "The con's long-running competitive trivia showdown.", rsvp: false },
+    { id: "diana", name: "Women, GNC & Non-binary Meetup", days: ["Fri"], time: "8:00 – 11:30 PM", location: "LVCC L2, W208–209", type: "Community", desc: "“DEF CON is better with friends” — social space hosted by the Diana Initiative.", rsvp: false },
+    { id: "movie-night", name: "Movie Night", days: ["Fri", "Sat"], time: "8:00 PM – 12:00 AM", location: "LVCC L2, W225", type: "Community", desc: "A low-key film screening away from the noise.", rsvp: false },
+    { id: "karaoke", name: "Hacker Karaoke", days: ["Fri", "Sat"], time: "8:00 PM – 1:00 AM", location: "LVCC L2, W229 & W232", type: "Party", desc: "A DEF CON tradition — performers of every skill level and musical era.", rsvp: false },
+    { id: "arcade", name: "Arcade Party", days: ["Fri"], time: "9:00 PM – 1:00 AM", location: "LVCC L1, Exhibit Hall West 3, Booth 801", type: "Contest & Games", desc: "Classic cabinets, a 16-player LED foosball table, and DJ Keith Myers — free with badge.", rsvp: false },
+    { id: "bic-root", name: "BIC R00T ACCESS 2026", days: ["Fri"], time: "9:00 PM – 1:00 AM", location: "LVCC L3, W322–324", type: "Party", desc: "Blacks In Cybersecurity celebrates Black culture through music spanning jazz to hip-hop to electronic.", rsvp: false },
+    { id: "dotd", name: "Day of the Dead Hacker Party", days: ["Fri"], time: "9:00 PM – 1:00 AM", location: "LVCC L3, W327", type: "Party", desc: "Celebrating the lives and lasting influence of hackers gone by. Costumes encouraged.", rsvp: false },
+    { id: "tiktok-h1", name: "TikTok / HackerOne Hacker Hangout", days: ["Fri"], time: "9:00 PM – 12:00 AM", location: "Flight Club, The Venetian", type: "Party", desc: "Vendor-hosted lounge night off-site, courtesy of TikTok and HackerOne.", rsvp: true },
+    { id: "whose-slide", name: "Whose Slide Is It Anyway?", days: ["Fri"], time: "10:00 PM – 12:00 AM", location: "LVCC L1, Exhibit Hall West 1, Booth 100", type: "Contest & Games", desc: "Ten years of improvised lightning talks on decks nobody's seen before.", rsvp: false },
+    { id: "seckc", name: "SecKC the WHOLE WIDE WORLD", days: ["Fri"], time: "10:00 PM – 1:00 AM", location: "LVCC L1, North Lobby", type: "Party", desc: "Kansas City's crew brings independent spirit and radical community to the North Lobby.", rsvp: false },
+    { id: "slopcon", name: "Slopcon", days: ["Fri"], time: "10:00 PM – 1:00 AM", location: "LVCC L2, W222", type: "Party", desc: "A tongue-in-cheek celebration of AI slop — “embrace the inevitable heat death of original thought.”", rsvp: false },
+    { id: "floridaman", name: "FloridaMan Party", days: ["Fri"], time: "10:00 PM – 1:00 AM", location: "Venue TBA", type: "Party", desc: "Ticketed party with a reputation that precedes it.", rsvp: true },
+
+    { id: "dcg-ne", name: "DCG New England Meetup", days: ["Sat"], time: "3:00 – 5:00 PM", location: "LVCC L3, W327", type: "Meetup", desc: "Six New England states, one room — shop talk and half-finished projects welcome.", rsvp: false },
+    { id: "vulncheck", name: "VulnCheck Exclusive Cocktail Party", days: ["Sat"], time: "6:00 – 9:00 PM", location: "Venue TBA", type: "Party", desc: "Vendor-hosted exclusive cocktail party.", rsvp: true },
+    { id: "krad", name: "10 Years of K-rad (Hackers.Town Party)", days: ["Sat"], time: "6:00 – 9:00 PM", location: "LVCC L1, North Lobby", type: "Party", desc: "A decade of Hackers.Town, celebrated with DJ sets from Kampf, Syntax976, Luna, PatAttack, Skittish, and Bus.", rsvp: false },
+    { id: "aus-embassy", name: "+61: The Australian Embassy", days: ["Sat"], time: "6:00 – 8:00 PM", location: "LVCC L2, W212", type: "Community", desc: "Aussie attendees swap hacker summer camp gossip and a bit of home.", rsvp: false },
+    { id: "surface-phantom", name: "Surface Security & PhantomSec Villa Party", days: ["Sat"], time: "6:30 – 11:00 PM", location: "Venue TBA", type: "Party", desc: "Vendor-hosted villa party.", rsvp: true },
+    { id: "spades-uno", name: "2nd Annual Spades Night & Uno Tournament", days: ["Sat"], time: "6:00 – 11:00 PM", location: "LVCC L3, W322–324", type: "Contest & Games", desc: "Blacks In Cybersecurity's expanded card-game brackets — casual hangout option if cards aren't your thing.", rsvp: false },
+    { id: "btv-movie", name: "Blue Team Village Movie Night", days: ["Sat"], time: "7:00 – 10:00 PM", location: "LVCC L2, W213–215", type: "Community", desc: "Popcorn and drinks at 7, movie at 8 — defenders unwind together.", rsvp: false },
+    { id: "dcnextgen", name: "DCNextGen Party", days: ["Sat"], time: "7:00 – 9:00 PM", location: "LVCC L3, W316", type: "Party", desc: "UV cyberpunk theme with games, music, DIY raccoon masks, and glow-in-the-dark tattoos.", rsvp: false },
+    { id: "gothcon", name: "GOTHCON", days: ["Sat"], time: "9:00 PM – 1:00 AM", location: "LVCC L1, Exhibit Hall West 3, Booth 801", type: "Party", desc: "Back for its 9th year — a dark dance-music DJ lineup pulled from across the US.", rsvp: false },
+    { id: "frontmans-fete", name: "Front Man's Fête: Octopus Game Party", days: ["Sat"], time: "9:00 PM – 1:00 AM", location: "LVCC L2, W212", type: "Party", desc: "A sophisticated, low-key lounge — classic board games over old-school hip-hop.", rsvp: false },
+    { id: "party-line", name: "Party Line (Call Center Village Party)", days: ["Sat"], time: "9:00 PM – 1:00 AM", location: "LVCC L2, W218", type: "Party", desc: "Phone booths, retro handsets, hold music, and lo-fi grooves — a telephony-themed rager.", rsvp: false },
+    { id: "vetcon", name: "VETCON 2026 Party", days: ["Sat"], time: "9:00 PM – 1:00 AM", location: "LVCC L3, W326", type: "Community", desc: "Veterans in cybersecurity gather to talk tech that supports military personnel.", rsvp: false },
+    { id: "illuminati", name: "Illuminati Party", days: ["Sat"], time: "9:00 PM – 1:00 AM", location: "LVCC L3, W327", type: "Party", desc: "“Rewrite the rules of engagement” — plot the community's future over music and drinks.", rsvp: false },
+    { id: "kayos", name: "Kayos Klub", days: ["Sat"], time: "10:00 PM – 1:00 AM", location: "LVCC L1, North Lobby", type: "Party", desc: "A night of music and magic for all ages, held in tribute to a lost community member.", rsvp: false },
+    { id: "dc801", name: "DC801 Party: The Return of Helga", days: ["Sat"], time: "10:00 PM – late", location: "The Adventuredome, Circus Circus", type: "Party", desc: "An off-site rager inside an indoor theme park.", rsvp: true },
+
+    { id: "afterparty", name: "DEF CON After Party @ LIV", days: ["Sun"], time: "10:30 PM – 2:00 AM", location: "LIV Nightclub, Fontainebleau", type: "Party", desc: "The official closer. Badge grants free admission and a complimentary drink.", rsvp: false }
+  ];
+
+  var state = { day: "all", type: "all" };
+
+  function todayKey() {
+    var now = new Date();
+    for (var i = 0; i < WEEKDAYS.length; i++) {
+      var d = DAY_REAL_DATE[WEEKDAYS[i]];
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()) {
+        return WEEKDAYS[i];
+      }
+    }
+    return null;
+  }
+
+  var today = todayKey();
+  if (today) state.day = today;
+
+  function buildDayRow() {
+    var row = document.getElementById("day-row");
+    var allBtn = makePill("All days", "all", state.day === "all", function () {
+      state.day = "all";
+      render();
+    });
+    row.appendChild(allBtn);
+    WEEKDAYS.forEach(function (d) {
+      var label = d + " " + DAY_DATES[d];
+      var btn = makePill(label, d, state.day === d, function () {
+        state.day = d;
+        render();
+      }, d === today);
+      row.appendChild(btn);
+    });
+  }
+
+  function buildTypeRow() {
+    var row = document.getElementById("type-row");
+    var allBtn = makePill("All", "all", state.type === "all", function () {
+      state.type = "all";
+      render();
+    });
+    row.appendChild(allBtn);
+    TYPES.forEach(function (t) {
+      var btn = makePill(t, t, state.type === t, function () {
+        state.type = t;
+        render();
+      });
+      btn.classList.add("type-pill");
+      btn.setAttribute("data-type", t);
+      row.appendChild(btn);
+    });
+  }
+
+  function makePill(label, value, pressed, onClick, showToday) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pill mono";
+    btn.setAttribute("aria-pressed", pressed ? "true" : "false");
+    btn.textContent = label;
+    if (showToday) {
+      var flag = document.createElement("span");
+      flag.className = "today-flag";
+      flag.textContent = "TODAY";
+      btn.appendChild(flag);
+    }
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  function refreshPressedStates() {
+    document.querySelectorAll("#day-row .pill").forEach(function (btn, idx) {
+      var value = idx === 0 ? "all" : WEEKDAYS[idx - 1];
+      btn.setAttribute("aria-pressed", state.day === value ? "true" : "false");
+    });
+    document.querySelectorAll("#type-row .pill").forEach(function (btn, idx) {
+      var value = idx === 0 ? "all" : TYPES[idx - 1];
+      btn.setAttribute("aria-pressed", state.type === value ? "true" : "false");
+    });
+  }
+
+  function firstMatchingDay(days) {
+    for (var i = 0; i < WEEKDAYS.length; i++) {
+      if (days.indexOf(WEEKDAYS[i]) !== -1) return WEEKDAYS[i];
+    }
+    return days[0];
+  }
+
+  function daysBadge(days) {
+    if (days.length === 1) return days[0].toUpperCase();
+    var idxs = days.map(function (d) { return WEEKDAYS.indexOf(d); });
+    var isRange = idxs.every(function (v, i, arr) { return i === 0 || v === arr[i - 1] + 1; });
+    if (isRange && days.length > 2) {
+      return days[0].toUpperCase() + "–" + days[days.length - 1].toUpperCase();
+    }
+    return days.map(function (d) { return d.toUpperCase(); }).join(" · ");
+  }
+
+  function render() {
+    refreshPressedStates();
+    var results = document.getElementById("results");
+    results.innerHTML = "";
+
+    var filtered = events.filter(function (e) {
+      var dayOk = state.day === "all" || e.days.indexOf(state.day) !== -1;
+      var typeOk = state.type === "all" || e.type === state.type;
+      return dayOk && typeOk;
+    });
+
+    document.getElementById("result-count").textContent =
+      filtered.length + " of " + events.length + " events";
+
+    if (filtered.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "No events match that combination. Try a different day or vibe.";
+      results.appendChild(empty);
+      return;
+    }
+
+    var groupKeys, groupOf;
+    if (state.day !== "all") {
+      groupKeys = [state.day];
+      groupOf = function () { return state.day; };
+    } else {
+      groupKeys = WEEKDAYS;
+      groupOf = function (e) { return firstMatchingDay(e.days); };
+    }
+
+    groupKeys.forEach(function (dayKey) {
+      var dayEvents = filtered.filter(function (e) { return groupOf(e) === dayKey; });
+      if (dayEvents.length === 0) return;
+
+      var section = document.createElement("section");
+      section.className = "day-group";
+
+      var heading = document.createElement("div");
+      heading.className = "day-heading";
+      heading.innerHTML =
+        "<h2>" + DAY_FULL[dayKey] + "</h2>" +
+        "<span class=\"date mono\">" + DAY_DATES[dayKey] + ", 2026</span>" +
+        "<span class=\"count\">" + dayEvents.length + " event" + (dayEvents.length === 1 ? "" : "s") + "</span>";
+      section.appendChild(heading);
+
+      var list = document.createElement("div");
+      list.className = "card-list";
+
+      dayEvents.forEach(function (e) {
+        list.appendChild(renderCard(e));
+      });
+
+      section.appendChild(list);
+      results.appendChild(section);
+    });
+  }
+
+  function renderCard(e) {
+    var card = document.createElement("article");
+    card.className = "card";
+
+    var stub = document.createElement("div");
+    stub.className = "stub";
+    stub.innerHTML =
+      "<span class=\"days-badge mono\">" + daysBadge(e.days) + "</span>" +
+      "<span class=\"time\">" + e.time + "</span>";
+
+    var perf = document.createElement("div");
+    perf.className = "perforation";
+
+    var content = document.createElement("div");
+    content.className = "content";
+
+    var typeClass = "type-" + TYPE_SLUG[e.type];
+
+    var chips = "<span class=\"chip " + typeClass + "\">" + e.type + "</span>";
+    if (e.rsvp) chips += "<span class=\"chip rsvp\">RSVP required</span>";
+
+    content.innerHTML =
+      "<h3 class=\"name\">" + e.name + "</h3>" +
+      "<div class=\"chips\">" + chips + "</div>" +
+      "<p class=\"location\"><span class=\"mark\">▸</span>" + e.location + "</p>" +
+      "<p class=\"desc\">" + e.desc + "</p>";
+
+    card.appendChild(stub);
+    card.appendChild(perf);
+    card.appendChild(content);
+    return card;
+  }
+
+  document.getElementById("reset-btn").addEventListener("click", function () {
+    state.day = today || "all";
+    state.type = "all";
+    render();
+  });
+
+  buildDayRow();
+  buildTypeRow();
+  render();
+})();
+</script>
